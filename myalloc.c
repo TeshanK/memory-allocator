@@ -7,6 +7,8 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+static pthread_mutex_t heap_lock = PTHREAD_MUTEX_INITIALIZER;
+
 // Head of the sorted free-list (by address)
 static free_block *head = NULL;
 
@@ -22,7 +24,6 @@ static void insert_to_list(free_block *new);
 static void remove_from_list(free_block *block);
 static free_block *coalesce(free_block *block);
 static free_block *split_block(free_block *block, size_t size);
-
 
 // Capture initial program break lazily
 static void init_heap_if_needed(void) {
@@ -90,7 +91,8 @@ static void remove_from_list(free_block *block) {
   block->is_allocated = 1;
 }
 
-// Try to merge adjacent free blocks around `block` and return the resulting block
+// Try to merge adjacent free blocks around `block` and return the resulting
+// block
 static free_block *coalesce(free_block *block) {
   free_block *next_block = block->next;
   free_block *prev_block = block->prev;
@@ -117,7 +119,9 @@ static free_block *coalesce(free_block *block) {
   return block;
 }
 
-// Split `block` into an allocated-sized prefix of `size` and a leftover free block; insert the leftover into the free list. Returns the block to use for allocation (the prefix).
+// Split `block` into an allocated-sized prefix of `size` and a leftover free
+// block; insert the leftover into the free list. Returns the block to use for
+// allocation (the prefix).
 static free_block *split_block(free_block *block, size_t size) {
   size_t leftover_size = block->size - size - FBLOCKSIZE;
   if (leftover_size < MIN_SPLIT_REMAINDER) {
@@ -137,7 +141,7 @@ static free_block *split_block(free_block *block, size_t size) {
 }
 
 // Allocate `size` bytes (returns NULL on failure)
-void *myalloc(size_t size) {
+static void *internal_myalloc(size_t size) {
   if (size <= 0) {
     return NULL;
   }
@@ -208,19 +212,27 @@ void *myalloc(size_t size) {
   return PAYLOAD(new);
 }
 
+void *myalloc(size_t size) {
+  pthread_mutex_lock(&heap_lock);
+  void *ptr = internal_myalloc(size);
+  pthread_mutex_unlock(&heap_lock);
+  return ptr;
+}
+
 // Free a block and insert into the free list
 void myfree(void *ptr) {
   if (ptr == NULL)
     return;
 
-  free_block *new = HEADER(ptr);
-  if (new->is_allocated) {
-    insert_to_list(new);
-    return;
+  pthread_mutex_lock(&heap_lock);
+  free_block *blk = (free_block *)ptr;
+  if (!blk->is_allocated) {
+    pthread_mutex_unlock(&heap_lock);
+    fprintf(stderr, "double free not allowed\n");
+    exit(1);
   }
-
-  fprintf(stderr, "Double free detected!\n");
-  exit(1);
+  insert_to_list(blk);
+  pthread_mutex_unlock(&heap_lock);
 }
 
 // Debug: print addresses of free-list blocks
