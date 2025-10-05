@@ -5,3 +5,4 @@ This memory allocator uses
 - First-fit allocation strategy
 - Block splitting and coalescing
 - Constant block alignment
+- Mutex locks for thread safety
