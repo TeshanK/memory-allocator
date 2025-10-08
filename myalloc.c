@@ -1,9 +1,9 @@
 #include "myalloc.h"
 
+#include <stdio.h>
 #include <limits.h>
 #include <pthread.h>
 #include <stdint.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 
@@ -233,18 +233,4 @@ void myfree(void *ptr) {
   }
   insert_to_list(blk);
   pthread_mutex_unlock(&heap_lock);
-}
-
-// Debug: print addresses of free-list blocks
-void print_list() {
-  free_block *curr = head;
-  if (head == NULL) {
-    return;
-  }
-
-  while (curr) {
-    printf("%p: -> ", curr);
-    curr = curr->next;
-  }
-  printf("\n");
 }

@@ -38,7 +38,4 @@ void *myalloc(size_t size);
 // Free a pointer returned by myalloc
 void myfree(void *ptr);
 
-// Debug helper to print free list state
-void print_list(void);
-
 #endif // MYALLOC_H
