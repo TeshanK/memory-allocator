@@ -225,7 +225,7 @@ void myfree(void *ptr) {
     return;
 
   pthread_mutex_lock(&heap_lock);
-  free_block *blk = (free_block *)ptr;
+  free_block *blk = HEADER(ptr);
   if (!blk->is_allocated) {
     pthread_mutex_unlock(&heap_lock);
     fprintf(stderr, "double free not allowed\n");
