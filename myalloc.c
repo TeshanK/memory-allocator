@@ -1,10 +1,11 @@
 #include "myalloc.h"
 
-#include <stdio.h>
 #include <limits.h>
 #include <pthread.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
 static pthread_mutex_t heap_lock = PTHREAD_MUTEX_INITIALIZER;
@@ -233,4 +234,39 @@ void myfree(void *ptr) {
   }
   insert_to_list(blk);
   pthread_mutex_unlock(&heap_lock);
+}
+
+// Change the size of the memory block pointed by ptr
+void *myrealloc(void *ptr, size_t size) {
+  if (ptr == NULL || size <= 0) {
+    return ptr;
+  }
+
+  pthread_mutex_lock(&heap_lock);
+
+  free_block *block = HEADER(ptr);
+  if (size <= block->size) {
+    pthread_mutex_unlock(&heap_lock);
+    return ptr;
+  }
+
+  size_t additional_size = size - block->size;
+
+  // If touching program break extend it
+  // else create a new block with the required size and copy the data to it
+  if (((char *)block + block->size + FBLOCKSIZE) == (char *)sbrk(0)) {
+    if (sbrk(additional_size) == (void *)-1) {
+      pthread_mutex_unlock(&heap_lock);
+      return NULL;
+    }
+    block->size = size;
+  } else {
+    void *new_ptr = internal_myalloc(size);
+    memcpy(new_ptr, ptr, block->size);
+    insert_to_list(block);
+    ptr = new_ptr;
+  }
+  pthread_mutex_unlock(&heap_lock);
+
+  return ptr;
 }

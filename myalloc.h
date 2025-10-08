@@ -38,4 +38,7 @@ void *myalloc(size_t size);
 // Free a pointer returned by myalloc
 void myfree(void *ptr);
 
+// Change the size of the memory block pointed by ptr
+void *myrealloc(void *ptr, size_t size);
+
 #endif // MYALLOC_H
