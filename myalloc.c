@@ -270,3 +270,14 @@ void *myrealloc(void *ptr, size_t size) {
 
   return ptr;
 }
+
+// Allocates memory for an array of n elements of `size` bytes
+// the memory is set to zero
+void *mycalloc(size_t n, size_t size) {
+  pthread_mutex_lock(&heap_lock);
+  size_t total_size = n * size;
+  void *ptr = internal_myalloc(total_size);
+  memset(ptr, 0, total_size);
+  pthread_mutex_unlock(&heap_lock);
+  return ptr;
+}

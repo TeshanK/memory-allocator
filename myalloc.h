@@ -41,4 +41,8 @@ void myfree(void *ptr);
 // Change the size of the memory block pointed by ptr
 void *myrealloc(void *ptr, size_t size);
 
+// Allocates memory for an array of n elements of `size` bytes
+// the memory is set to zero
+void *mycalloc(size_t n, size_t size);
+
 #endif // MYALLOC_H
